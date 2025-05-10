@@ -74,7 +74,7 @@ class MyApp extends ConsumerWidget {
     // Wrap the app with NotificationHandler to handle task notifications
     return NotificationHandler(
       child: MaterialApp(
-        title: 'ZediaTask',
+        title: 'Zedia',
         theme: AppTheme.lightTheme,
         debugShowCheckedModeBanner: false,
         home: const SplashScreen(),

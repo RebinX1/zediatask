@@ -31,7 +31,22 @@ class ProfileTab extends ConsumerWidget {
               pinned: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
-                  color: AppTheme.primaryColor,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.backgroundColor, // Very dark blue
+                        AppTheme.primaryColor,   // Dark teal blue
+                        AppTheme.secondaryColor, // Medium teal blue
+                      ],
+                    ),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/images/triangle_pattern.png'),
+                      fit: BoxFit.cover,
+                      opacity: 0.15, // Make the pattern subtle
+                    ),
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

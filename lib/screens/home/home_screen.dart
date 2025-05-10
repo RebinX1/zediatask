@@ -74,8 +74,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     final Size size = MediaQuery.of(context).size;
     
     return Scaffold(
-      extendBody: true,
-      backgroundColor: AppTheme.backgroundColor,
+      extendBody: false,
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Row(
           children: [

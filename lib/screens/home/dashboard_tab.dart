@@ -219,7 +219,7 @@ class DashboardTab extends ConsumerWidget {
               error: (_, __) => const SizedBox(height: 100),
             ),
             
-            const SizedBox(height: 24),
+            const SizedBox(height: 80),
           ],
         ),
       ),
@@ -293,15 +293,21 @@ class _WelcomeSection extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.primaryColor,
-            Color(0xFF2980B9), // Darker blue
+            AppTheme.backgroundColor, // Very dark blue
+            AppTheme.primaryColor,   // Dark teal blue
+            AppTheme.secondaryColor, // Medium teal blue
           ],
+        ),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/triangle_pattern.png'),
+          fit: BoxFit.cover,
+          opacity: 0.15, // Make the pattern subtle
         ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryColor.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -311,7 +317,7 @@ class _WelcomeSection extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Welcome back,',
+                'Hello back',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white.withOpacity(0.9),
                     ),

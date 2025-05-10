@@ -70,7 +70,7 @@ Overdue tasks are highlighted in the UI.
 2. Task Priorities & Tags
 Tasks can have a priority: high, medium, low.
 
-Tags (e.g., “maintenance”, “delivery”) allow filtering and categorization.
+Tags (e.g., "maintenance", "delivery") allow filtering and categorization.
 
 3. Push Notifications
 Employees receive:
@@ -145,5 +145,55 @@ Admins/Managers can create, assign, comment, and upload.
 Employees can only see their own tasks and submit completion/feedback.
 
 Supabase Row-Level Security (RLS) policies ensure strict access control.
+
+# Zedia Marketing App
+
+A modern task management and marketing app for Zedia.
+
+## Theme Update Instructions
+
+The app has been updated with a new dark blue/teal theme to match the Zedia Marketing logo. To complete the setup:
+
+### Adding Logo and Background Images
+
+1. You need to add two image files to the app:
+   - `assets/images/zedia_logo.png` - The white Zedia logo
+   - `assets/images/triangle_pattern.png` - A dark blue triangle pattern for the background
+
+2. Logo placement instructions:
+   - Save the Zedia logo (white text on transparent background) as `assets/images/zedia_logo.png`
+   - Save the triangle pattern background as `assets/images/triangle_pattern.png`
+
+3. Image requirements:
+   - Logo: PNG format with transparency
+   - Background: Seamless pattern, preferably dark blue with triangle pattern matching the logo background
+
+### Color Theme
+
+The app now uses a clean design with:
+
+- **Splash Screen Only**: Dark blue/teal gradient with triangle pattern from the logo
+- **All Other Screens**: Clean white background for better readability
+- **Accents**: Teal blue from the logo (#0A3A4A) used for buttons, icons, and text elements
+
+The color scheme keeps the striking branding on the splash screen while providing a clean, white interface for the rest of the app.
+
+### App Name Changes
+
+The app name has been updated from "ZediaTask" to "Zedia" throughout the UI and configuration files.
+
+## Running the App
+
+```bash
+flutter pub get
+flutter run
+```
+
+## Features
+
+- Modern UI with dark theme matching Zedia branding
+- Task management
+- User authentication
+- Admin controls
 
 

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colors
-  static const Color primaryColor = Color(0xFF3498DB); // Blue
-  static const Color accentColor = Color(0xFF2ECC71); // Green
-  static const Color secondaryColor = Color(0xFF9B59B6); // Purple
-  static const Color backgroundColor = Color(0xFFF5F7FA);
-  static const Color cardColor = Color(0xFFFFFFFF);
+  // Colors - Updated to match logo's dark blue/teal theme but keeping white UI
+  static const Color primaryColor = Color(0xFF0A3A4A); // Dark teal blue
+  static const Color accentColor = Color(0xFF2C5063); // Medium teal blue
+  static const Color secondaryColor = Color(0xFF163E52); // Teal blue
+  static const Color backgroundColor = Color(0xFF0A1C24); // Very dark blue background
+  static const Color contentBackgroundColor = Colors.white; // White background for content areas
+  static const Color cardColor = Colors.white; // White card background
   
   // Task priority colors
   static const Color highPriorityColor = Color(0xFFE74C3C); // Red
@@ -15,14 +16,15 @@ class AppTheme {
   static const Color lowPriorityColor = Color(0xFF27AE60); // Green
   
   // Task status colors
-  static const Color pendingStatusColor = Color(0xFFE67E22); // Orange
+  static const Color pendingStatusColor = Color(0xFFF39C12); // Orange
   static const Color acceptedStatusColor = Color(0xFF3498DB); // Blue
   static const Color completedStatusColor = Color(0xFF27AE60); // Green
   
   // Text colors
-  static const Color textPrimaryColor = Color(0xFF2C3E50);
-  static const Color textSecondaryColor = Color(0xFF7F8C8D);
-  static const Color textLightColor = Color(0xFFBDC3C7);
+  static const Color textPrimaryColor = Color(0xFF2C3E50); // Dark text for white backgrounds
+  static const Color textSecondaryColor = Color(0xFF7F8C8D); // Gray text
+  static const Color textLightColor = Color(0xFFBDC3C7); // Light gray
+  static const Color textOnDarkColor = Colors.white; // White text for dark backgrounds
   
   // Error and success colors
   static const Color errorColor = Color(0xFFE74C3C);
@@ -36,9 +38,14 @@ class AppTheme {
       primary: primaryColor,
       secondary: secondaryColor,
       error: errorColor,
-      background: backgroundColor,
+      background: contentBackgroundColor,
+      surface: cardColor,
+      onPrimary: textOnDarkColor,
+      onSecondary: textOnDarkColor,
+      onBackground: textPrimaryColor,
+      onSurface: textPrimaryColor,
     ),
-    scaffoldBackgroundColor: backgroundColor,
+    scaffoldBackgroundColor: contentBackgroundColor,
     cardTheme: CardTheme(
       color: cardColor,
       elevation: 1,
@@ -98,9 +105,10 @@ class AppTheme {
         borderRadius: BorderRadius.circular(8),
       ),
       filled: true,
-      fillColor: cardColor,
+      fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       hintStyle: const TextStyle(color: textLightColor),
+      labelStyle: const TextStyle(color: textSecondaryColor),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
@@ -111,6 +119,9 @@ class AppTheme {
     floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: accentColor,
       foregroundColor: Colors.white,
+    ),
+    iconTheme: const IconThemeData(
+      color: primaryColor,
     ),
   );
 

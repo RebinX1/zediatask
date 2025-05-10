@@ -27,7 +27,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Future<void> _initializeAndTest() async {
     try {
       // Brief delay to show splash screen
-      await Future.delayed(const Duration(milliseconds: 1000));
+      await Future.delayed(const Duration(milliseconds: 1500));
       
       setState(() {
         _statusMessage = 'Testing connection...';
@@ -88,58 +88,79 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // App logo
-            const Icon(
-              Icons.task_alt,
-              size: 80,
-              color: AppTheme.primaryColor,
-            ),
-            const SizedBox(height: 24),
-            // App name
-            Text(
-              'ZediaTask',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-            ),
-            const SizedBox(height: 16),
-            // Tagline
-            Text(
-              'Task Management Made Simple',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textSecondaryColor,
-                  ),
-            ),
-            const SizedBox(height: 48),
-            // Loading indicator
-            if (!_hasError)
-              const SpinKitDoubleBounce(
-                color: AppTheme.primaryColor,
-                size: 50.0,
-              )
-            else
-              ElevatedButton(
-                onPressed: _initializeAndTest,
-                child: const Text('Retry Connection'),
-              ),
-            const SizedBox(height: 16),
-            // Status message
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                _statusMessage,
-                style: TextStyle(
-                  color: _hasError ? AppTheme.errorColor : AppTheme.textSecondaryColor,
+      backgroundColor: AppTheme.backgroundColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.backgroundColor, // Very dark blue
+              AppTheme.primaryColor,   // Dark teal blue
+              AppTheme.secondaryColor, // Medium teal blue
+            ],
+          ),
+          image: DecorationImage(
+            image: AssetImage('assets/images/triangle_pattern.png'),
+            fit: BoxFit.cover,
+            opacity: 0.15, // Make the pattern subtle
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Zedia logo
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 80),
+                child: Image.asset(
+                  'assets/images/zedia_logo.png',
+                  fit: BoxFit.contain,
                 ),
-                textAlign: TextAlign.center,
               ),
-            ),
-          ],
+              const SizedBox(height: 32),
+              // App name
+              Text(
+                'Zedia',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              // Tagline
+              Text(
+                'Marketing & Task Management',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppTheme.textSecondaryColor,
+                    ),
+              ),
+              const SizedBox(height: 48),
+              // Loading indicator
+              if (!_hasError)
+                const SpinKitDoubleBounce(
+                  color: Colors.white,
+                  size: 50.0,
+                )
+              else
+                ElevatedButton(
+                  onPressed: _initializeAndTest,
+                  child: const Text('Retry Connection'),
+                ),
+              const SizedBox(height: 16),
+              // Status message
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  _statusMessage,
+                  style: TextStyle(
+                    color: _hasError ? AppTheme.errorColor : AppTheme.textSecondaryColor,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
