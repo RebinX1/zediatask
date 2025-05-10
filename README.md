@@ -147,5 +147,3 @@ Employees can only see their own tasks and submit completion/feedback.
 Supabase Row-Level Security (RLS) policies ensure strict access control.
 
 
-supabaseurl : https://yfwyucrgqjalwztolnbq.supabase.co
-anonkey : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlmd3l1Y3JncWphbHd6dG9sbmJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEyNDgxNTAsImV4cCI6MjA1NjgyNDE1MH0.iRkwsMfxJcGoOZhke00pZLUc2DX7gPUNFPffZGtSxG4
