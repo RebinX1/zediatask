@@ -21,6 +21,7 @@ class NotificationHandler extends ConsumerStatefulWidget {
 class _NotificationHandlerState extends ConsumerState<NotificationHandler> {
   final _fcmTokenService = FCMTokenService();
   bool _initialized = false;
+  bool get _isDebugMode => !const bool.fromEnvironment('dart.vm.product');
   
   @override
   void initState() {
@@ -34,6 +35,13 @@ class _NotificationHandlerState extends ConsumerState<NotificationHandler> {
   Future<void> _initializeNotifications() async {
     try {
       if (_initialized) return;
+      
+      // Skip Firebase operations in debug mode
+      if (_isDebugMode) {
+        debugPrint('Skipping notification initialization in debug mode');
+        _initialized = true;
+        return;
+      }
       
       // Initialize the notification service
       try {

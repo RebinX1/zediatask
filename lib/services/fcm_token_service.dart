@@ -4,11 +4,24 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FCMTokenService {
   final SupabaseClient supabase = Supabase.instance.client;
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Use nullable getter to avoid initialization crashes
+  FirebaseMessaging? get _messaging {
+    try {
+      return FirebaseMessaging.instance;
+    } catch (e) {
+      debugPrint('Error accessing FirebaseMessaging.instance: $e');
+      return null;
+    }
+  }
   
   // Save FCM token to Supabase
   Future<void> saveToken() async {
     try {
+      if (_messaging == null) {
+        debugPrint('Firebase messaging not available, skipping token storage');
+        return;
+      }
+
       // Check if user is authenticated
       final user = supabase.auth.currentUser;
       if (user == null) {
@@ -17,7 +30,7 @@ class FCMTokenService {
       }
       
       // Get the token
-      final fcmToken = await _messaging.getToken();
+      final fcmToken = await _messaging?.getToken();
       if (fcmToken == null) {
         debugPrint('FCM token is null, cannot save');
         return;
@@ -61,8 +74,13 @@ class FCMTokenService {
   // Delete FCM token from Supabase (on logout)
   Future<void> deleteToken() async {
     try {
+      if (_messaging == null) {
+        debugPrint('Firebase messaging not available, skipping token deletion');
+        return;
+      }
+      
       final user = supabase.auth.currentUser;
-      final fcmToken = await _messaging.getToken();
+      final fcmToken = await _messaging?.getToken();
       
       if (user != null && fcmToken != null) {
         await supabase

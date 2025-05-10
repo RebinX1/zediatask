@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zediatask/constants/app_constants.dart';
+import 'package:zediatask/firebase_options.dart';
 import 'package:zediatask/providers/auth_provider.dart';
 import 'package:zediatask/providers/task_provider.dart';
 import 'package:zediatask/screens/auth/login_screen.dart';
@@ -16,8 +17,6 @@ import 'package:zediatask/widgets/notification_handler.dart';
 // Define background message handler - must be top level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Ensure Firebase is initialized
-  await Firebase.initializeApp();
   debugPrint('Handling a background message: ${message.messageId}');
   debugPrint('Message data: ${message.data}');
   debugPrint('Notification title: ${message.notification?.title}');
@@ -27,14 +26,17 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase for notifications
+  // Initialize Firebase for notifications - with catch-all error handling
   try {
-    await Firebase.initializeApp();
-    
-    // Set up background message handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    
-    debugPrint('Firebase initialized successfully');
+    // Skip Firebase initialization in debug mode to avoid crashes
+    // In production, you would use real Firebase config
+    if (!const bool.fromEnvironment('dart.vm.product')) {
+      debugPrint('Skipping Firebase initialization in debug mode');
+    } else {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      debugPrint('Firebase initialized successfully');
+    }
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
     // Continue without Firebase - the app will use mocked data

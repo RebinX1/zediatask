@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "611828740822",
-    "project_id": "zediatask",
-    "storage_bucket": "zediatask.firebasestorage.app"
+    "project_number": "000000000000",
+    "project_id": "your-project-id",
+    "storage_bucket": "your-project-id.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:611828740822:android:71970dab4686d68b3ecf77",
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
         "android_client_info": {
           "package_name": "com.example.zediatask"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD2lt0mRJR2QAU8vKOVKydaorUa_NcQHoI"
+          "current_key": "YOUR_API_KEY"
         }
       ],
       "services": {

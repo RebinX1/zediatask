@@ -2,7 +2,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 class NotificationService {
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  // Use nullable for safer access
+  FirebaseMessaging? _messaging;
+  bool _isDebugMode = !const bool.fromEnvironment('dart.vm.product');
   
   // For handling notification when the app is in the background
   final Function(RemoteMessage)? onBackgroundMessage;
@@ -17,67 +19,92 @@ class NotificationService {
     this.onBackgroundMessage,
     this.onForegroundMessage,
     this.onNotificationTap,
-  });
+  }) {
+    // Initialize in constructor with safe access
+    try {
+      if (!_isDebugMode) {
+        _messaging = FirebaseMessaging.instance;
+      }
+    } catch (e) {
+      debugPrint('Error initializing Firebase Messaging: $e');
+    }
+  }
 
   Future<void> initialize() async {
-    // Request permission with updated approach for all platforms
-    await _requestPermission();
+    // Skip in debug mode
+    if (_isDebugMode || _messaging == null) {
+      debugPrint('Skipping notification service initialization: Firebase not available or in debug mode');
+      return;
+    }
     
-    // Listen for foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (onForegroundMessage != null) {
-        onForegroundMessage!(message);
+    try {
+      // Request permission with updated approach for all platforms
+      await _requestPermission();
+      
+      // Listen for foreground messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        if (onForegroundMessage != null) {
+          onForegroundMessage!(message);
+        }
+        debugPrint('📱 Foreground message received:');
+        debugPrint('📱 Title: ${message.notification?.title}');
+        debugPrint('📱 Body: ${message.notification?.body}');
+        debugPrint('📱 Data: ${message.data}');
+      });
+      
+      // Handle notification tap when app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        if (onNotificationTap != null) {
+          onNotificationTap!(message);
+        }
+        debugPrint('📱 Background message tapped:');
+        debugPrint('📱 Title: ${message.notification?.title}');
+        debugPrint('📱 Body: ${message.notification?.body}');
+      });
+      
+      // Check for initial notification (if app was opened from notification)
+      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      if (initialMessage != null && onNotificationTap != null) {
+        onNotificationTap!(initialMessage);
+        debugPrint('📱 Initial message handled:');
+        debugPrint('📱 Title: ${initialMessage.notification?.title}');
+        debugPrint('📱 Body: ${initialMessage.notification?.body}');
       }
-      debugPrint('📱 Foreground message received:');
-      debugPrint('📱 Title: ${message.notification?.title}');
-      debugPrint('📱 Body: ${message.notification?.body}');
-      debugPrint('📱 Data: ${message.data}');
-    });
-    
-    // Handle notification tap when app is in background
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      if (onNotificationTap != null) {
-        onNotificationTap!(message);
-      }
-      debugPrint('📱 Background message tapped:');
-      debugPrint('📱 Title: ${message.notification?.title}');
-      debugPrint('📱 Body: ${message.notification?.body}');
-    });
-    
-    // Check for initial notification (if app was opened from notification)
-    final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
-    if (initialMessage != null && onNotificationTap != null) {
-      onNotificationTap!(initialMessage);
-      debugPrint('📱 Initial message handled:');
-      debugPrint('📱 Title: ${initialMessage.notification?.title}');
-      debugPrint('📱 Body: ${initialMessage.notification?.body}');
+    } catch (e) {
+      debugPrint('Error during notification service initialization: $e');
     }
   }
 
   Future<void> _requestPermission() async {
-    // Request permissions for iOS, new approach works for Android 13+ too
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-      criticalAlert: false,
-      announcement: false,
-      carPlay: false,
-    );
+    if (_messaging == null) return;
     
-    debugPrint('User granted permission: ${settings.authorizationStatus}');
-    
-    // For iOS foreground notification presentation
-    await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    
-    // Subscribe to topic for testing
-    await FirebaseMessaging.instance.subscribeToTopic('all');
-    debugPrint('Subscribed to "all" topic for testing notifications');
+    try {
+      // Request permissions for iOS, new approach works for Android 13+ too
+      final settings = await _messaging!.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+        criticalAlert: false,
+        announcement: false,
+        carPlay: false,
+      );
+      
+      debugPrint('User granted permission: ${settings.authorizationStatus}');
+      
+      // For iOS foreground notification presentation
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      
+      // Subscribe to topic for testing
+      await FirebaseMessaging.instance.subscribeToTopic('all');
+      debugPrint('Subscribed to "all" topic for testing notifications');
+    } catch (e) {
+      debugPrint('Error requesting notification permissions: $e');
+    }
   }
 
   // Method to manually show a task notification using FCM API
@@ -98,18 +125,37 @@ class NotificationService {
   }
 
   Future<String?> getToken() async {
-    final token = await _messaging.getToken();
-    debugPrint('FCM Token: $token');
-    return token;
+    if (_messaging == null) return null;
+    
+    try {
+      final token = await _messaging!.getToken();
+      debugPrint('FCM Token: $token');
+      return token;
+    } catch (e) {
+      debugPrint('Error getting FCM token: $e');
+      return null;
+    }
   }
 
   Future<void> subscribeTopic(String topic) async {
-    await _messaging.subscribeToTopic(topic);
-    debugPrint('Subscribed to topic: $topic');
+    if (_messaging == null) return;
+    
+    try {
+      await _messaging!.subscribeToTopic(topic);
+      debugPrint('Subscribed to topic: $topic');
+    } catch (e) {
+      debugPrint('Error subscribing to topic: $e');
+    }
   }
 
   Future<void> unsubscribeTopic(String topic) async {
-    await _messaging.unsubscribeFromTopic(topic);
-    debugPrint('Unsubscribed from topic: $topic');
+    if (_messaging == null) return;
+    
+    try {
+      await _messaging!.unsubscribeFromTopic(topic);
+      debugPrint('Unsubscribed from topic: $topic');
+    } catch (e) {
+      debugPrint('Error unsubscribing from topic: $e');
+    }
   }
 } 

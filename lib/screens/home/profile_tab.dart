@@ -14,109 +14,131 @@ class ProfileTab extends ConsumerWidget {
     final userDetailsAsync = ref.watch(userDetailsProvider);
     final userRoleAsync = ref.watch(userRoleProvider);
     
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: userDetailsAsync.when(
-        data: (userDetails) {
-          if (userDetails == null) {
-            return const Center(
-              child: Text('No user data available'),
-            );
-          }
-          
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildProfileHeader(context, userDetails, ref),
-              const SizedBox(height: 24),
-              
-              // Statistics
-              if (userDetails['role'] == 'employee')
-                _buildEmployeeStats(context, userDetails),
-              
-              const SizedBox(height: 24),
-              
-              // Settings & actions
-              Text(
-                'Settings',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              
-              // Settings menu
-              _buildSettingsMenu(context, ref, userRoleAsync),
-            ],
+    return userDetailsAsync.when(
+      data: (userDetails) {
+        if (userDetails == null) {
+          return const Center(
+            child: Text('No user data available'),
           );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, stack) => Center(
-          child: Text('Error: $error'),
-        ),
+        }
+        
+        return CustomScrollView(
+          slivers: [
+            // App Bar with profile info
+            SliverAppBar(
+              expandedHeight: 200,
+              backgroundColor: AppTheme.primaryColor,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  color: AppTheme.primaryColor,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 45,
+                        backgroundColor: Colors.white,
+                        child: Text(
+                          _getInitials(userDetails['name'] ?? ''),
+                          style: const TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        userDetails['name'] ?? 'User',
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        userDetails['email'] ?? '',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Role badge
+            SliverToBoxAdapter(
+              child: Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 24),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getRoleColor(userDetails['role']).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _getRoleColor(userDetails['role']).withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    _getRoleText(userDetails['role']),
+                    style: TextStyle(
+                      color: _getRoleColor(userDetails['role']),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            // Statistics section (only for employees)
+            if (userDetails['role'] == 'employee')
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: _buildEmployeeStats(context, userDetails),
+                ),
+              ),
+            
+            // Settings section
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8, bottom: 16),
+                      child: Text(
+                        'Account Settings',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimaryColor,
+                        ),
+                      ),
+                    ),
+                    _buildSettingsMenu(context, ref, userRoleAsync),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(
+        child: CircularProgressIndicator(),
       ),
-    );
-  }
-
-  Widget _buildProfileHeader(BuildContext context, Map<String, dynamic> userDetails, WidgetRef ref) {
-    return Column(
-      children: [
-        // User avatar
-        CircleAvatar(
-          radius: 50,
-          backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
-          child: Text(
-            _getInitials(userDetails['name'] ?? ''),
-            style: const TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // User name
-        Text(
-          userDetails['name'] ?? 'User',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 4),
-        
-        // User email
-        Text(
-          userDetails['email'] ?? '',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.textSecondaryColor,
-              ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 8),
-        
-        // User role
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: _getRoleColor(userDetails['role']).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            _getRoleText(userDetails['role']),
-            style: TextStyle(
-              color: _getRoleColor(userDetails['role']),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
+      error: (error, stack) => Center(
+        child: Text('Error: $error'),
+      ),
     );
   }
 
@@ -124,13 +146,17 @@ class ProfileTab extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Statistics',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+        const Padding(
+          padding: EdgeInsets.only(left: 8, bottom: 16),
+          child: Text(
+            'Performance',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
         Row(
           children: [
             _buildStatCard(
@@ -246,30 +272,6 @@ class ProfileTab extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Notifications
-          _buildSettingsItem(
-            context,
-            icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Configure notification settings',
-            onTap: () {
-              // Navigate to notifications settings
-            },
-          ),
-          const Divider(height: 1),
-          
-          // App Theme
-          _buildSettingsItem(
-            context,
-            icon: Icons.palette_outlined,
-            title: 'Appearance',
-            subtitle: 'App theme and display settings',
-            onTap: () {
-              // Navigate to appearance settings
-            },
-          ),
-          const Divider(height: 1),
-          
           // Admin Panel - Only for admins
           userRoleAsync.maybeWhen(
             data: (role) {
@@ -280,9 +282,8 @@ class ProfileTab extends ConsumerWidget {
                       context,
                       icon: Icons.admin_panel_settings_outlined,
                       title: 'Admin Panel',
-                      subtitle: 'Manage users and app settings',
+                      subtitle: 'Manage users and organization settings',
                       onTap: () {
-                        // Navigate to admin panel
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -299,30 +300,6 @@ class ProfileTab extends ConsumerWidget {
             },
             orElse: () => const SizedBox.shrink(),
           ),
-          
-          // Help & Support
-          _buildSettingsItem(
-            context,
-            icon: Icons.help_outline,
-            title: 'Help & Support',
-            subtitle: 'Get assistance and contact support',
-            onTap: () {
-              // Navigate to help & support
-            },
-          ),
-          const Divider(height: 1),
-          
-          // About
-          _buildSettingsItem(
-            context,
-            icon: Icons.info_outline,
-            title: 'About',
-            subtitle: 'App information and version',
-            onTap: () {
-              // Navigate to about screen
-            },
-          ),
-          const Divider(height: 1),
           
           // Logout
           _buildSettingsItem(
@@ -363,20 +340,29 @@ class ProfileTab extends ConsumerWidget {
       leading: Icon(
         icon,
         color: iconColor ?? AppTheme.primaryColor,
+        size: 24,
       ),
       title: Text(
         title,
         style: TextStyle(
-          fontWeight: FontWeight.w500,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
           color: titleColor ?? AppTheme.textPrimaryColor,
         ),
       ),
-      subtitle: Text(subtitle),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(
+          fontSize: 13,
+          color: AppTheme.textSecondaryColor,
+        ),
+      ),
       trailing: const Icon(
         Icons.chevron_right,
         color: AppTheme.textSecondaryColor,
       ),
       onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
     );
   }
 
@@ -385,9 +371,9 @@ class ProfileTab extends ConsumerWidget {
     
     final nameParts = name.split(' ');
     if (nameParts.length >= 2) {
-      return '${nameParts[0][0]}${nameParts[1][0]}';
-    } else if (nameParts.length == 1) {
-      return nameParts[0][0];
+      return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
+    } else if (nameParts.length == 1 && nameParts[0].isNotEmpty) {
+      return nameParts[0][0].toUpperCase();
     }
     
     return '';
