@@ -32,6 +32,18 @@ android {
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName
+        
+        // Add this to disable native code builds
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
+    }
+
+    // Disable C++ builds
+    packagingOptions {
+        doNotStrip '**/*.so'
     }
 
     buildTypes {
