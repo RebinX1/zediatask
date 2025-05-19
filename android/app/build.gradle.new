@@ -7,19 +7,12 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
-// Load key.properties file
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
 // Remove Kotlin version override
 // ext.kotlin_version = '2.0.0' 
 
 android {
     namespace "com.zediasolutions.zediatask"
-    compileSdkVersion 35
+    compileSdkVersion flutter.compileSdkVersion
     ndkVersion "27.0.12077973"
 
     compileOptions {
@@ -33,24 +26,22 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
-    // Use the original keystore from first version upload
+    // Add signing config
     signingConfigs {
         release {
+            keyAlias 'zediatask'
+            keyPassword System.getenv('KEY_PASSWORD') ?: 'android'
             storeFile file('../zediatask.keystore')
-            storePassword        keystoreProperties['storePassword']
-            keyAlias             keystoreProperties['keyAlias']
-            keyPassword          keystoreProperties['keyPassword']
+            storePassword System.getenv('STORE_PASSWORD') ?: 'android'
         }
     }
 
     defaultConfig {
         applicationId "com.zediasolutions.zediatask"
         minSdkVersion 23
-        // Target Android 13 to avoid incompatibility with Play Core
-        targetSdkVersion 34
-        // Increment version code to 3
-        versionCode 4
-        versionName "1.1.0"
+        targetSdkVersion flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
         
         // Add this to disable native code builds
         externalNativeBuild {
@@ -76,19 +67,13 @@ android {
 
     buildTypes {
         release {
-            // Use the original signing config
+            // Update to use the release signing config
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
-}
-
-// Make sure the repositories include Google's maven repository
-repositories {
-    google()
-    mavenCentral()
 }
 
 dependencies {
@@ -99,18 +84,11 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics:21.5.0'
     implementation 'com.google.firebase:firebase-messaging:23.4.1'
     
-    // Play Core libraries - Using modular libraries instead of monolithic core
-    // implementation 'com.google.android.play:core:1.10.3' // Original problematic line, removed
-    // implementation 'com.google.android.play:core:1.8.0' // Removed older version too
-    
-    // Modern modular Play Core libraries
+    // Use newer Play libraries that are compatible with Android 14
     implementation 'com.google.android.play:app-update:2.1.0'
-    implementation 'com.google.android.play:review:2.0.1'
     implementation 'com.google.android.play:feature-delivery:2.1.0'
-    implementation 'com.google.android.play:core-common:2.0.3'
 }
 
 flutter {
     source '../..'
 } 
-
