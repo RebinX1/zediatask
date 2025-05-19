@@ -1,0 +1,12 @@
+--- FlutterLocalNotificationsPlugin.java.original
++++ FlutterLocalNotificationsPlugin.java
+@@ -1030,7 +1030,7 @@
+     // Sets the large icon to appear in the notification content view
+     if (largeIconBitmapSource != null) {
+       if (publicVersionBuilder != null) {
+-        bigPictureStyle.bigLargeIcon(null);
++        bigPictureStyle.bigLargeIcon((android.graphics.Bitmap) null);
+       }
+     }
+     return bigPictureStyle;
+} 
