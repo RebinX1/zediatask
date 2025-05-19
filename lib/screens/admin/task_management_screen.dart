@@ -10,11 +10,96 @@ import 'package:zediatask/widgets/task_card.dart';
 // Filter by employee provider
 final taskEmployeeFilterProvider = StateProvider<String?>((ref) => null);
 
+// This helps track the active overlay entry for showing messages
+OverlayEntry? _taskOverlayEntry;
+
+void _showTaskMessageOverlay(String message, {bool isError = false}) {
+  // Remove any existing overlay first
+  _hideTaskMessageOverlay();
+  
+  // Create an overlay entry
+  final overlayEntry = OverlayEntry(
+    builder: (context) => Positioned(
+      bottom: 50,
+      left: 20,
+      right: 20,
+      child: Material(
+        elevation: 8,
+        borderRadius: BorderRadius.circular(8),
+        color: isError ? AppTheme.errorColor : AppTheme.successColor,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(
+                isError ? Icons.error : Icons.check_circle,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: _hideTaskMessageOverlay,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+  
+  // Store the current overlay entry
+  _taskOverlayEntry = overlayEntry;
+  
+  // Add the overlay to the navigator
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    try {
+      final state = _taskOverlayState;
+      if (state != null) {
+        state.insert(overlayEntry);
+        
+        // Remove after 3 seconds
+        Future.delayed(const Duration(seconds: 3), () {
+          if (_taskOverlayEntry == overlayEntry) {
+            _hideTaskMessageOverlay();
+          }
+        });
+      }
+    } catch (e) {
+      print('Error showing task message overlay: $e');
+    }
+  });
+}
+
+void _hideTaskMessageOverlay() {
+  _taskOverlayEntry?.remove();
+  _taskOverlayEntry = null;
+}
+
+BuildContext? _taskGlobalContext;
+
+OverlayState? get _taskOverlayState {
+  if (_taskGlobalContext == null) return null;
+  final navigatorState = Navigator.of(_taskGlobalContext!, rootNavigator: true);
+  return navigatorState.overlay;
+}
+
 class TaskManagementScreen extends ConsumerWidget {
   const TaskManagementScreen({super.key});
+  
+  // Add a global key for the scaffold messenger
+  static final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Store the context for overlay usage
+    _taskGlobalContext = context;
+    
     final userRoleAsync = ref.watch(userRoleProvider);
     final allTasksAsync = ref.watch(allTasksProvider);
     final employeesAsync = ref.watch(employeesProvider);
@@ -23,124 +108,127 @@ class TaskManagementScreen extends ConsumerWidget {
     // Watch the task update notifier (but don't create circular dependencies)
     ref.watch(taskUpdateNotifierProvider);
     
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Task Management'),
-      ),
-      body: userRoleAsync.when(
-        data: (role) {
-          if (role != UserRole.admin) {
-            return const Center(
-              child: Text('You do not have permission to access this page.'),
-            );
-          }
-          
-          return Column(
-            children: [
-              // Add Task Button
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: ElevatedButton.icon(
-                  onPressed: () => _showAddTaskDialog(context, ref),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Create New Task'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
+    return ScaffoldMessenger(
+      key: _scaffoldMessengerKey,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Task Management'),
+        ),
+        body: userRoleAsync.when(
+          data: (role) {
+            if (role != UserRole.admin) {
+              return const Center(
+                child: Text('You do not have permission to access this page.'),
+              );
+            }
+            
+            return Column(
+              children: [
+                // Add Task Button
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showAddTaskDialog(context, ref),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create New Task'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
+                    ),
                   ),
                 ),
-              ),
-              
-              // Employee Filter
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.person, color: AppTheme.textSecondaryColor),
-                    const SizedBox(width: 8),
-                    const Text('Filter by Employee:'),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: employeesAsync.when(
-                        data: (employees) {
-                          return DropdownButtonFormField<String?>(
-                            value: employeeFilter,
-                            decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                              border: OutlineInputBorder(),
-                            ),
-                            items: [
-                              const DropdownMenuItem(
-                                value: null,
-                                child: Text('All Employees'),
+                
+                // Employee Filter
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.person, color: AppTheme.textSecondaryColor),
+                      const SizedBox(width: 8),
+                      const Text('Filter by Employee:'),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: employeesAsync.when(
+                          data: (employees) {
+                            return DropdownButtonFormField<String?>(
+                              value: employeeFilter,
+                              decoration: const InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                                border: OutlineInputBorder(),
                               ),
-                              ...employees.map((employee) {
-                                return DropdownMenuItem(
-                                  value: employee['id'],
-                                  child: Text(employee['name']),
-                                );
-                              }),
-                            ],
-                            onChanged: (value) {
-                              ref.read(taskEmployeeFilterProvider.notifier).state = value;
-                            },
+                              items: [
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('All Employees'),
+                                ),
+                                ...employees.map((employee) {
+                                  return DropdownMenuItem(
+                                    value: employee['id'],
+                                    child: Text(employee['name']),
+                                  );
+                                }),
+                              ],
+                              onChanged: (value) {
+                                ref.read(taskEmployeeFilterProvider.notifier).state = value;
+                              },
+                            );
+                          },
+                          loading: () => const LinearProgressIndicator(),
+                          error: (_, __) => const Text('Error loading employees'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Task list
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      ref.refresh(allTasksProvider);
+                    },
+                    child: allTasksAsync.when(
+                      data: (tasks) {
+                        // Filter tasks if employee filter is set
+                        final filteredTasks = employeeFilter != null
+                            ? tasks.where((task) => task.assignedTo == employeeFilter).toList()
+                            : tasks;
+                            
+                        if (filteredTasks.isEmpty) {
+                          return const Center(
+                            child: Text('No tasks found'),
                           );
-                        },
-                        loading: () => const LinearProgressIndicator(),
-                        error: (_, __) => const Text('Error loading employees'),
+                        }
+                        
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredTasks.length,
+                          itemBuilder: (context, index) {
+                            final task = filteredTasks[index];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: _buildTaskItem(context, ref, task, employeesAsync),
+                            );
+                          },
+                        );
+                      },
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      error: (error, stack) => Center(
+                        child: Text('Error: $error'),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              
-              // Task list
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    ref.refresh(allTasksProvider);
-                  },
-                  child: allTasksAsync.when(
-                    data: (tasks) {
-                      // Filter tasks if employee filter is set
-                      final filteredTasks = employeeFilter != null
-                          ? tasks.where((task) => task.assignedTo == employeeFilter).toList()
-                          : tasks;
-                          
-                      if (filteredTasks.isEmpty) {
-                        return const Center(
-                          child: Text('No tasks found'),
-                        );
-                      }
-                      
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: filteredTasks.length,
-                        itemBuilder: (context, index) {
-                          final task = filteredTasks[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _buildTaskItem(context, ref, task, employeesAsync),
-                          );
-                        },
-                      );
-                    },
-                    loading: () => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    error: (error, stack) => Center(
-                      child: Text('Error: $error'),
-                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (_, __) => const Center(
-          child: Text('Error loading user information'),
+              ],
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          error: (_, __) => const Center(
+            child: Text('Error loading user information'),
+          ),
         ),
       ),
     );
@@ -609,12 +697,7 @@ class TaskManagementScreen extends ConsumerWidget {
     DateTime? dueDate,
   ) async {
     if (title.isEmpty || description.isEmpty || assignedTo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all required fields'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _showTaskMessageOverlay('Please fill in all required fields', isError: true);
       return;
     }
     
@@ -622,12 +705,7 @@ class TaskManagementScreen extends ConsumerWidget {
       Navigator.of(context).pop(); // Close the dialog
       
       // Show loading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Creating task...'),
-          duration: Duration(days: 1), // "Infinite" duration until we dismiss it
-        ),
-      );
+      _showTaskMessageOverlay('Creating task...');
       
       final supabaseService = ref.read(supabaseServiceProvider);
       await supabaseService.createTask(
@@ -638,30 +716,17 @@ class TaskManagementScreen extends ConsumerWidget {
         dueDate: dueDate,
       );
       
-      // Dismiss the loading snackbar
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      // Hide any existing message
+      _hideTaskMessageOverlay();
       
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task created successfully'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
+      _showTaskMessageOverlay('Task created successfully');
       
       // Notify other components about the task update
       notifyTaskUpdate(ref);
     } catch (e) {
-      // Dismiss the loading snackbar
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error creating task: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _hideTaskMessageOverlay();
+      _showTaskMessageOverlay('Error creating task: ${e.toString()}', isError: true);
     }
   }
 
@@ -677,12 +742,7 @@ class TaskManagementScreen extends ConsumerWidget {
     DateTime? dueDate,
   ) async {
     if (title.isEmpty || description.isEmpty || assignedTo.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill in all required fields'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _showTaskMessageOverlay('Please fill in all required fields', isError: true);
       return;
     }
     
@@ -690,12 +750,7 @@ class TaskManagementScreen extends ConsumerWidget {
       Navigator.of(context).pop(); // Close the dialog
       
       // Show loading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Updating task...'),
-          duration: Duration(days: 1), // "Infinite" duration until we dismiss it
-        ),
-      );
+      _showTaskMessageOverlay('Updating task...');
       
       final supabaseService = ref.read(supabaseServiceProvider);
       final client = supabaseService.client;
@@ -715,30 +770,17 @@ class TaskManagementScreen extends ConsumerWidget {
       
       await client.from('tasks').update(updateData).eq('id', taskId);
       
-      // Dismiss the loading snackbar
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      // Hide any existing message
+      _hideTaskMessageOverlay();
       
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task updated successfully'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
+      _showTaskMessageOverlay('Task updated successfully');
       
       // Notify other components about the task update
       notifyTaskUpdate(ref);
     } catch (e) {
-      // Dismiss the loading snackbar
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating task: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _hideTaskMessageOverlay();
+      _showTaskMessageOverlay('Error updating task: ${e.toString()}', isError: true);
     }
   }
 
@@ -749,12 +791,7 @@ class TaskManagementScreen extends ConsumerWidget {
   ) async {
     try {
       // Show loading indicator
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Deleting task...'),
-          duration: Duration(days: 1), // "Infinite" duration until we dismiss it
-        ),
-      );
+      _showTaskMessageOverlay('Deleting task...');
       
       final supabaseService = ref.read(supabaseServiceProvider);
       final client = supabaseService.client;
@@ -763,30 +800,17 @@ class TaskManagementScreen extends ConsumerWidget {
       // of related records (comments, attachments, etc.)
       await client.from('tasks').delete().eq('id', taskId);
       
-      // Dismiss the loading snackbar
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      // Hide any existing message
+      _hideTaskMessageOverlay();
       
       // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Task deleted successfully'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
+      _showTaskMessageOverlay('Task deleted successfully');
       
       // Notify other components about the task update
       notifyTaskUpdate(ref);
     } catch (e) {
-      // Dismiss the loading snackbar
-      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error deleting task: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      _hideTaskMessageOverlay();
+      _showTaskMessageOverlay('Error deleting task: ${e.toString()}', isError: true);
     }
   }
 } 

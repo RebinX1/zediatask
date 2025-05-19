@@ -196,7 +196,7 @@ class ProfileTab extends ConsumerWidget {
           children: [
             _buildStatCard(
               context,
-              title: 'Avg. Completion Time',
+              title: 'Avg.Completion Time',
               value: _formatAvgTime(userDetails['avg_completion_time']),
               icon: Icons.timer,
               color: AppTheme.primaryColor,

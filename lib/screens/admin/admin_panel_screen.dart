@@ -55,22 +55,7 @@ class AdminPanelScreen extends ConsumerWidget {
                   );
                 },
               ),
-              AdminMenuCard(
-                title: 'Task Templates',
-                description: 'Create and manage reusable task templates',
-                icon: Icons.library_books,
-                onTap: () {
-                  _showFeatureNotImplemented(context);
-                },
-              ),
-              AdminMenuCard(
-                title: 'Tags Management',
-                description: 'Create and organize tags for task categorization',
-                icon: Icons.sell,
-                onTap: () {
-                  _showFeatureNotImplemented(context);
-                },
-              ),
+
               
               const SizedBox(height: 24),
               _buildSectionTitle(context, 'System Settings'),
@@ -85,41 +70,9 @@ class AdminPanelScreen extends ConsumerWidget {
                   );
                 },
               ),
-              AdminMenuCard(
-                title: 'Notification Settings',
-                description: 'Configure system-wide notification preferences',
-                icon: Icons.notifications,
-                onTap: () {
-                  _showFeatureNotImplemented(context);
-                },
-              ),
-              AdminMenuCard(
-                title: 'Backup & Restore',
-                description: 'Manage system backups and restore functionality',
-                icon: Icons.settings_backup_restore,
-                onTap: () {
-                  _showFeatureNotImplemented(context);
-                },
-              ),
+            
               
-              const SizedBox(height: 24),
-              _buildSectionTitle(context, 'Reports'),
-              AdminMenuCard(
-                title: 'Performance Reports',
-                description: 'Generate and view detailed employee performance reports',
-                icon: Icons.bar_chart,
-                onTap: () {
-                  _showFeatureNotImplemented(context);
-                },
-              ),
-              AdminMenuCard(
-                title: 'Task Analytics',
-                description: 'View task completion statistics and trends',
-                icon: Icons.analytics,
-                onTap: () {
-                  _showFeatureNotImplemented(context);
-                },
-              ),
+             
             ],
           );
         },

@@ -15,7 +15,7 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen> {
-  String _statusMessage = 'Initializing...';
+  String _statusMessage = 'Loading...';
   bool _hasError = false;
   
   @override
@@ -29,39 +29,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       // Brief delay to show splash screen
       await Future.delayed(const Duration(milliseconds: 1500));
       
-      setState(() {
-        _statusMessage = 'Testing connection...';
-      });
-      
-      // Test Supabase connection
+      // Test Supabase connection silently
       final supabaseService = ref.read(supabaseServiceProvider);
-      
-      // Use the new checkDatabaseConnection method
       final isConnected = await supabaseService.checkDatabaseConnection();
       
       if (!isConnected) {
-        setState(() {
-          _hasError = true;
-          _statusMessage = 'Database connection failed. Please check your network and try again.';
-        });
-        return;
+        throw Exception('Unable to connect to server');
       }
       
-      setState(() {
-        _statusMessage = 'Connection successful! Initializing services...';
-      });
-      
-      // Initialize Supabase service (setup buckets, etc.)
+      // Initialize Supabase service silently
       await supabaseService.initialize(setupStorage: true);
       
-      setState(() {
-        _statusMessage = 'Services initialized! Checking authentication...';
-      });
-      
-      // Verify and refresh authentication if needed
+      // Verify and refresh authentication silently
       final isAuthValid = await supabaseService.verifyAndRefreshAuth();
       
-      // Small delay to show success message
+      // Small delay for visual consistency
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Navigate based on auth status
@@ -79,7 +61,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
       if (mounted) {
         setState(() {
           _hasError = true;
-          _statusMessage = 'Error: $e';
+          _statusMessage = 'Connection error. Please try again.';
         });
       }
     }
@@ -145,20 +127,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               else
                 ElevatedButton(
                   onPressed: _initializeAndTest,
-                  child: const Text('Retry Connection'),
+                  child: const Text('Retry'),
                 ),
               const SizedBox(height: 16),
               // Status message
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  _statusMessage,
-                  style: TextStyle(
-                    color: _hasError ? AppTheme.errorColor : AppTheme.textSecondaryColor,
+              if (_hasError)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  child: Text(
+                    _statusMessage,
+                    style: TextStyle(
+                      color: _hasError ? AppTheme.errorColor : AppTheme.textSecondaryColor,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
             ],
           ),
         ),

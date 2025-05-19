@@ -165,6 +165,34 @@ class SupabaseService {
     await _client.auth.signOut();
   }
 
+  // Method to refresh the current session
+  Future<bool> refreshSession() async {
+    try {
+      // Try to refresh the current session
+      final response = await _client.auth.refreshSession();
+      return response.user != null;
+    } catch (e) {
+      // If refreshing fails, try to restore from stored credentials
+      try {
+        // Try to get any stored credentials from local storage
+        final session = _client.auth.currentSession;
+        if (session != null && session.refreshToken != null) {
+          try {
+            // Try to use the refresh token to set the session
+            await _client.auth.setSession(session.refreshToken!);
+            return true;
+          } catch (_) {
+            // If that fails, try to re-authenticate with stored credentials
+            return false;
+          }
+        }
+        return false;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
   Future<User?> get currentUser async {
     final authUser = _client.auth.currentUser;
     if (authUser == null) return null;
