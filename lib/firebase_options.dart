@@ -40,24 +40,23 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // You should replace these placeholders with actual values from your Firebase project
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    databaseURL: 'YOUR_DATABASE_URL',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
+    apiKey: 'AIzaSyD2lt0mRJR2QAU8vKOVKydaorUa_NcQHoI',
+    appId: '1:611828740822:android:0f77752ff0e203d43ecf77',
+    messagingSenderId: '611828740822',
+    projectId: 'zediatask',
+    storageBucket: 'zediatask.firebasestorage.app',
   );
 
+  // You should replace these placeholders with actual values from your Firebase project
+
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    databaseURL: 'YOUR_DATABASE_URL',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    iosClientId: 'YOUR_IOS_CLIENT_ID',
-    iosBundleId: 'YOUR_IOS_BUNDLE_ID',
+    apiKey: 'AIzaSyBiqEfpm264oPk2g9PWXVVwlvZyUrOxkIg',
+    appId: '1:611828740822:ios:01552e8b773601143ecf77',
+    messagingSenderId: '611828740822',
+    projectId: 'zediatask',
+    storageBucket: 'zediatask.firebasestorage.app',
+    iosBundleId: 'com.zediasolutions.zediatask',
   );
+
 } 
