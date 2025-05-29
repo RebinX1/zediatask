@@ -1,10 +1,8 @@
 plugins {
-    id 'com.android.application'
-    id 'kotlin-android'
-    id 'dev.flutter.flutter-gradle-plugin'
-    
-    // Add the Google services Gradle plugin
-    id 'com.google.gms.google-services'
+    id("com.android.application")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 // Remove Kotlin version override
@@ -83,16 +81,16 @@ repositories {
 }
 
 dependencies {
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
+    coreLibraryDesugaring('com.android.tools:desugar_jdk_libs:2.0.4')
     
     // Use a fixed version of Firebase dependencies compatible with Kotlin 1.8
-    implementation 'com.google.firebase:firebase-core:21.1.1'
-    implementation 'com.google.firebase:firebase-analytics:21.5.0'
-    implementation 'com.google.firebase:firebase-messaging:23.4.1'
+    implementation('com.google.firebase:firebase-core:21.1.1')
+    implementation('com.google.firebase:firebase-analytics:21.5.0')
+    implementation('com.google.firebase:firebase-messaging:23.4.1')
     
     // Use newer Play libraries that are compatible with Android 14
-    implementation 'com.google.android.play:app-update:2.1.0'
-    implementation 'com.google.android.play:feature-delivery:2.1.0'
+    implementation('com.google.android.play:app-update:2.1.0')
+    implementation('com.google.android.play:feature-delivery:2.1.0')
 }
 
 flutter {

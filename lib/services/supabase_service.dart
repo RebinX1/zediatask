@@ -162,6 +162,20 @@ class SupabaseService {
   }
 
   Future<void> signOut() async {
+    try {
+      // Clear the notification token before signing out
+      final user = _client.auth.currentUser;
+      if (user != null) {
+        await _client.from('users').update({
+          'notificationtoken': null,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', user.id);
+        print('Notification token cleared from users table');
+      }
+    } catch (e) {
+      print('Error clearing notification token on logout: $e');
+    }
+    
     await _client.auth.signOut();
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zediatask/providers/auth_provider.dart';
 import 'package:zediatask/screens/home/home_screen.dart';
+import 'package:zediatask/services/fcm_token_service.dart';
 import 'package:zediatask/utils/app_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -56,9 +57,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           // Store the logged in user in the state provider
           ref.read(loggedInUserProvider.notifier).state = user;
           
+          // Navigate to home screen first
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
+          
+          // Save FCM notification token to the users table after navigation
+          // Using a delayed approach to ensure Firebase is fully ready
+          Future.delayed(const Duration(seconds: 2), () async {
+            try {
+              final fcmTokenService = FCMTokenService();
+              
+              // First check if we can get a token for debugging
+              final debugToken = await fcmTokenService.getTokenForDebug();
+              print('Debug token check result: ${debugToken != null ? 'SUCCESS' : 'FAILED'}');
+              
+              await fcmTokenService.saveToken();
+              await fcmTokenService.handleTokenRefresh();
+              print('FCM token save process completed after login');
+            } catch (e) {
+              print('Error saving FCM token after login: $e');
+            }
+          });
         } else {
           print('Login failed: No user returned');
           setState(() {

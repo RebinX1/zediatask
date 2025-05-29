@@ -11,12 +11,16 @@ import 'package:zediatask/providers/task_provider.dart';
 import 'package:zediatask/screens/auth/login_screen.dart';
 import 'package:zediatask/screens/home/home_screen.dart';
 import 'package:zediatask/screens/splash_screen.dart';
+import 'package:zediatask/services/fcm_token_service.dart';
 import 'package:zediatask/utils/app_theme.dart';
 import 'package:zediatask/widgets/notification_handler.dart';
 
 // Define background message handler - must be top level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // If you're going to use other Firebase services in the background, such as Firestore,
+  // make sure you call `initializeApp` before using other Firebase services.
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform); // Ensure Firebase is initialized for background handler
   debugPrint('Handling a background message: ${message.messageId}');
   debugPrint('Message data: ${message.data}');
   debugPrint('Notification title: ${message.notification?.title}');
@@ -30,13 +34,19 @@ void main() async {
   try {
     // Skip Firebase initialization in debug mode to avoid crashes
     // In production, you would use real Firebase config
-    if (!const bool.fromEnvironment('dart.vm.product')) {
-      debugPrint('Skipping Firebase initialization in debug mode');
-    } else {
-      await Firebase.initializeApp();
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-      debugPrint('Firebase initialized successfully');
-    }
+    // if (!const bool.fromEnvironment('dart.vm.product')) {
+    //   debugPrint('Skipping Firebase initialization in debug mode');
+    // } else {
+    //   await Firebase.initializeApp();
+    //   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    //   debugPrint('Firebase initialized successfully');
+    // }
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await _initializeFirebaseMessaging(); // Call the new function here
+    debugPrint('Firebase initialized successfully');
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
     // Continue without Firebase - the app will use mocked data
@@ -61,6 +71,42 @@ void main() async {
   );
 }
 
+Future<void> _initializeFirebaseMessaging() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  // Request permission for notifications
+  NotificationSettings settings = await messaging.requestPermission(
+    alert: true,
+    announcement: false,
+    badge: true,
+    carPlay: false,
+    criticalAlert: false,
+    provisional: false,
+    sound: true,
+  );
+
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    debugPrint('User granted permission');
+  } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
+    debugPrint('User granted provisional permission');
+  } else {
+    debugPrint('User declined or has not accepted permission');
+  }
+
+  // Get the FCM token
+  String? token = await messaging.getToken();
+  debugPrint('Firebase Messaging Token: $token');
+
+  // Set up token refresh handling using FCMTokenService
+  try {
+    final fcmTokenService = FCMTokenService();
+    await fcmTokenService.handleTokenRefresh();
+    debugPrint('FCM token refresh listener set up successfully');
+  } catch (e) {
+    debugPrint('Error setting up FCM token refresh listener: $e');
+  }
+}
+
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -69,6 +115,9 @@ class MyApp extends ConsumerWidget {
     // Initialize real-time subscriptions
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initializeRealTimeSubscriptions(ref);
+      
+      // Save FCM token if user is logged in
+      _saveFCMTokenIfLoggedIn();
     });
     
     // Wrap the app with NotificationHandler to handle task notifications
@@ -89,6 +138,31 @@ class MyApp extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _saveFCMTokenIfLoggedIn() async {
+    try {
+      // Add a delay to ensure Firebase is fully initialized
+      await Future.delayed(const Duration(seconds: 3));
+      
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final fcmTokenService = FCMTokenService();
+        
+        // Debug check first
+        final debugToken = await fcmTokenService.getTokenForDebug();
+        debugPrint('App startup - Debug token check: ${debugToken != null ? 'SUCCESS' : 'FAILED'}');
+        
+        if (debugToken != null) {
+          await fcmTokenService.saveToken();
+          debugPrint('FCM token saved for already logged in user');
+        } else {
+          debugPrint('Could not get FCM token during app startup');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving FCM token for logged in user: $e');
+    }
   }
 }
 

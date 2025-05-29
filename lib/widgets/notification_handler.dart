@@ -37,7 +37,7 @@ class _NotificationHandlerState extends ConsumerState<NotificationHandler> {
       if (_initialized) return;
       
       // Skip Firebase operations in debug mode
-      if (_isDebugMode) {
+      if (!_isDebugMode) {
         debugPrint('Skipping notification initialization in debug mode');
         _initialized = true;
         return;
