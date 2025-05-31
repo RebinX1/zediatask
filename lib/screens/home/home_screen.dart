@@ -8,6 +8,7 @@ import 'package:zediatask/screens/home/leaderboard_tab.dart';
 import 'package:zediatask/screens/home/profile_tab.dart';
 import 'package:zediatask/screens/home/tasks_tab.dart';
 import 'package:zediatask/screens/task/create_task_screen.dart';
+import 'package:zediatask/services/fcm_token_service.dart';
 import 'package:zediatask/utils/app_theme.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -47,6 +48,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     
+    // Save FCM token when the home screen is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FCMTokenService().saveToken();
+    });
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),

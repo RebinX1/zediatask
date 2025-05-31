@@ -36,62 +36,41 @@ class FCMTokenService {
         return;
       }
       
-      // Get basic device info - just use simple values to avoid schema errors
-      final deviceInfo = {
-        'platform': 'android',
-        'timestamp': DateTime.now().toIso8601String(),
-      };
-      
-      // Check if token already exists
-      final existingTokens = await supabase
-          .from('user_tokens')
-          .select()
-          .eq('user_id', user.id)
-          .eq('fcm_token', fcmToken);
-      
-      if (existingTokens.isEmpty) {
-        // Insert new token
-        await supabase.from('user_tokens').insert({
-          'user_id': user.id,
-          'fcm_token': fcmToken,
-          'device_info': deviceInfo,
-        });
-        debugPrint('FCM token saved to Supabase');
-      } else {
-        // Update existing token
-        await supabase
-            .from('user_tokens')
-            .update({'device_info': deviceInfo, 'updated_at': DateTime.now().toIso8601String()})
-            .eq('user_id', user.id)
-            .eq('fcm_token', fcmToken);
-        debugPrint('FCM token updated in Supabase');
-      }
+      // Update the 'users' table with the FCM token
+      await supabase
+          .from('users')
+          .update({
+            'notificationtoken': fcmToken,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', user.id);
+      debugPrint('FCM token saved to users table in Supabase');
+
     } catch (e) {
-      debugPrint('Error saving FCM token: $e');
+      debugPrint('Error saving FCM token to users table: $e');
     }
   }
 
   // Delete FCM token from Supabase (on logout)
   Future<void> deleteToken() async {
     try {
-      if (_messaging == null) {
-        debugPrint('Firebase messaging not available, skipping token deletion');
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        debugPrint('User not authenticated, skipping token deletion from users table');
         return;
       }
       
-      final user = supabase.auth.currentUser;
-      final fcmToken = await _messaging?.getToken();
-      
-      if (user != null && fcmToken != null) {
-        await supabase
-            .from('user_tokens')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('fcm_token', fcmToken);
-        debugPrint('FCM token deleted from Supabase');
-      }
+      // Clear the FCM token in the 'users' table
+      await supabase
+          .from('users')
+          .update({
+            'notificationtoken': null, // Set to null to clear
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', user.id);
+      debugPrint('FCM token cleared from users table in Supabase');
     } catch (e) {
-      debugPrint('Error deleting FCM token: $e');
+      debugPrint('Error clearing FCM token from users table: $e');
     }
   }
 } 

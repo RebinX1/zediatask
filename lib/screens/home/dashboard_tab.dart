@@ -3,15 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zediatask/models/models.dart';
 import 'package:zediatask/providers/providers.dart';
 import 'package:zediatask/providers/task_provider.dart';
+import 'package:zediatask/services/fcm_token_service.dart';
 import 'package:zediatask/utils/app_theme.dart';
 import 'package:zediatask/utils/date_formatter.dart';
 import 'package:zediatask/widgets/task_card.dart';
 
-class DashboardTab extends ConsumerWidget {
+class DashboardTab extends ConsumerStatefulWidget {
   const DashboardTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardTab> createState() => _DashboardTabState();
+}
+
+class _DashboardTabState extends ConsumerState<DashboardTab> {
+  @override
+  void initState() {
+    super.initState();
+    // Save FCM token when the dashboard is initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FCMTokenService().saveToken();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Get current user role
     final loggedInUser = ref.watch(loggedInUserProvider);
     final isAdmin = loggedInUser?.role == UserRole.admin;
