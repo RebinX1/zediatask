@@ -46,6 +46,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   path_provider: ^2.1.2
   url_launcher: ^6.2.5
+  http: ^1.1.0
   
   # UI
   google_fonts: ^6.1.0

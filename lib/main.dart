@@ -11,7 +11,6 @@ import 'package:zediatask/providers/task_provider.dart';
 import 'package:zediatask/screens/auth/login_screen.dart';
 import 'package:zediatask/screens/home/home_screen.dart';
 import 'package:zediatask/screens/splash_screen.dart';
-import 'package:zediatask/services/fcm_token_service.dart';
 import 'package:zediatask/utils/app_theme.dart';
 import 'package:zediatask/widgets/notification_handler.dart';
 
@@ -47,6 +46,15 @@ void main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await _initializeFirebaseMessaging(); // Call the new function here
     debugPrint('Firebase initialized successfully');
+    
+    // Print FCM Token - with error handling for simulator
+    try {
+      String? fcmToken = await FirebaseMessaging.instance.getToken();
+      print('FCM Token: $fcmToken');
+    } catch (e) {
+      print('FCM Token Error (likely running on simulator): $e');
+    }
+    
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
     // Continue without Firebase - the app will use mocked data
@@ -97,14 +105,13 @@ Future<void> _initializeFirebaseMessaging() async {
   String? token = await messaging.getToken();
   debugPrint('Firebase Messaging Token: $token');
 
-  // Set up token refresh handling using FCMTokenService
-  try {
-    final fcmTokenService = FCMTokenService();
-    await fcmTokenService.handleTokenRefresh();
-    debugPrint('FCM token refresh listener set up successfully');
-  } catch (e) {
-    debugPrint('Error setting up FCM token refresh listener: $e');
-  }
+  // Listen for token refresh
+  messaging.onTokenRefresh.listen((newToken) {
+    debugPrint('Token refreshed: $newToken');
+    // If you need to send the token to your backend, do it here
+  }).onError((err) {
+    debugPrint('Error listening to token refresh: $err');
+  });
 }
 
 class MyApp extends ConsumerWidget {
@@ -116,8 +123,12 @@ class MyApp extends ConsumerWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       initializeRealTimeSubscriptions(ref);
       
-      // Save FCM token if user is logged in
-      _saveFCMTokenIfLoggedIn();
+      // Print FCM Token here after other initializations
+      FirebaseMessaging.instance.getToken().then((token) {
+        debugPrint('Firebase Messaging Token (from MyApp build): $token');
+      }).catchError((error) {
+        debugPrint('Error getting FCM token in MyApp: $error');
+      });
     });
     
     // Wrap the app with NotificationHandler to handle task notifications
@@ -138,31 +149,6 @@ class MyApp extends ConsumerWidget {
         },
       ),
     );
-  }
-
-  Future<void> _saveFCMTokenIfLoggedIn() async {
-    try {
-      // Add a delay to ensure Firebase is fully initialized
-      await Future.delayed(const Duration(seconds: 3));
-      
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        final fcmTokenService = FCMTokenService();
-        
-        // Debug check first
-        final debugToken = await fcmTokenService.getTokenForDebug();
-        debugPrint('App startup - Debug token check: ${debugToken != null ? 'SUCCESS' : 'FAILED'}');
-        
-        if (debugToken != null) {
-          await fcmTokenService.saveToken();
-          debugPrint('FCM token saved for already logged in user');
-        } else {
-          debugPrint('Could not get FCM token during app startup');
-        }
-      }
-    } catch (e) {
-      debugPrint('Error saving FCM token for logged in user: $e');
-    }
   }
 }
 

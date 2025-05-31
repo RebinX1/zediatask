@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:zediatask/models/models.dart';
 import 'package:zediatask/providers/providers.dart';
+import 'package:zediatask/providers/notification_provider.dart';
 import 'package:zediatask/utils/app_theme.dart';
 import 'package:path/path.dart' as path;
 
@@ -106,6 +107,49 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
           // Update the tasks list
           ref.refresh(userTasksProvider); 
           ref.read(taskUpdateNotifierProvider.notifier).state = DateTime.now();
+          
+          // Send push notifications to assigned users
+          try {
+            final pushNotificationService = ref.read(pushNotificationServiceProvider);
+            List<String> targetUserIds = [];
+            
+            if (_isGroupTask && _selectedEmployeeIds.isNotEmpty) {
+              // For group tasks, send to all selected employees
+              targetUserIds = _selectedEmployeeIds;
+            } else if (_selectedEmployeeId != null && _selectedEmployeeId!.isNotEmpty) {
+              // For individual tasks, send to the assigned employee
+              targetUserIds = [_selectedEmployeeId!];
+            }
+            
+            if (targetUserIds.isNotEmpty) {
+              debugPrint('Sending notifications to ${targetUserIds.length} users for task: ${createdTask.title}');
+              
+              final results = await pushNotificationService.sendTaskAssignmentNotifications(
+                userIds: targetUserIds,
+                taskTitle: createdTask.title,
+                taskId: createdTask.id,
+                isGroupTask: _isGroupTask,
+              );
+              
+              // Log results
+              int successCount = results.values.where((success) => success).length;
+              debugPrint('✅ Notifications sent successfully: $successCount/${targetUserIds.length}');
+              
+              if (mounted && successCount > 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Task created and notifications sent to $successCount user(s)'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            } else {
+              debugPrint('No users selected for notifications');
+            }
+          } catch (e) {
+            debugPrint('Error sending notifications: $e');
+            // Don't show error to user as task was created successfully
+          }
         }
 
         if (mounted) {

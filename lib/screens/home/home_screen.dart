@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:zediatask/models/models.dart';
 import 'package:zediatask/providers/providers.dart';
 import 'package:zediatask/screens/home/dashboard_tab.dart';
@@ -61,30 +60,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
     
     _animationController.forward();
-    
-    // Print FCM Token when home screen appears
-    _printFCMToken();
-  }
-  
-  void _printFCMToken() async {
-    try {
-      // Add a delay to ensure Firebase is ready
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final messaging = FirebaseMessaging.instance;
-      final token = await messaging.getToken();
-      
-      if (token != null) {
-        print('=== FCM TOKEN FROM HOME SCREEN ===');
-        print('Token: $token');
-        print('Token length: ${token.length}');
-        print('===================================');
-      } else {
-        print('FCM Token is NULL from home screen');
-      }
-    } catch (e) {
-      print('Error getting FCM token from home screen: $e');
-    }
   }
   
   @override

@@ -2,6 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zediatask/models/models.dart';
 import 'package:zediatask/services/services.dart';
 
+// Push notification service provider
+final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
+  return PushNotificationService();
+});
+
 // Notification service provider
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(
