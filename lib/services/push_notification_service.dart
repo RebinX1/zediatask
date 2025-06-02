@@ -19,14 +19,14 @@ class PushNotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
-      // Get user's FCM token from database
+      // Get user's FCM token from user_tokens table
       final response = await supabase
-          .from('users')
-          .select('notificationtoken')
-          .eq('id', userId)
-          .single();
+          .from('user_tokens')
+          .select('fcm_token')
+          .eq('user_id', userId)
+          .maybeSingle();
 
-      final fcmToken = response['notificationtoken'] as String?;
+      final fcmToken = response?['fcm_token'] as String?;
       
       if (fcmToken == null || fcmToken.isEmpty) {
         debugPrint('No FCM token found for user: $userId');
@@ -55,18 +55,18 @@ class PushNotificationService {
     final results = <String, bool>{};
     
     try {
-      // Get FCM tokens for all users
+      // Get FCM tokens for all users from user_tokens table
       final response = await supabase
-          .from('users')
-          .select('id, notificationtoken')
-          .inFilter('id', userIds);
+          .from('user_tokens')
+          .select('user_id, fcm_token')
+          .inFilter('user_id', userIds);
 
-      final users = response as List<dynamic>;
+      final userTokens = response as List<dynamic>;
       
       // Send notification to each user with a valid token
-      for (final user in users) {
-        final userId = user['id'] as String;
-        final fcmToken = user['notificationtoken'] as String?;
+      for (final userToken in userTokens) {
+        final userId = userToken['user_id'] as String;
+        final fcmToken = userToken['fcm_token'] as String?;
         
         if (fcmToken != null && fcmToken.isNotEmpty) {
           final success = await _sendNotificationToToken(
@@ -78,6 +78,15 @@ class PushNotificationService {
           results[userId] = success;
         } else {
           debugPrint('No FCM token found for user: $userId');
+          results[userId] = false;
+        }
+      }
+      
+      // Handle users that don't have tokens in the user_tokens table
+      final foundUserIds = userTokens.map((ut) => ut['user_id'] as String).toSet();
+      for (final userId in userIds) {
+        if (!foundUserIds.contains(userId)) {
+          debugPrint('No FCM token record found for user: $userId');
           results[userId] = false;
         }
       }

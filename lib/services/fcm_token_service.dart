@@ -36,18 +36,44 @@ class FCMTokenService {
         return;
       }
       
-      // Update the 'users' table with the FCM token
-      await supabase
-          .from('users')
-          .update({
-            'notificationtoken': fcmToken,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', user.id);
-      debugPrint('FCM token saved to users table in Supabase');
+      // Get basic device info
+      final deviceInfo = {
+        'platform': 'flutter',
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      
+      // Check if token already exists for this user
+      final existingTokens = await supabase
+          .from('user_tokens')
+          .select()
+          .eq('user_id', user.id)
+          .eq('fcm_token', fcmToken);
+      
+      if (existingTokens.isEmpty) {
+        // Insert new token
+        await supabase.from('user_tokens').insert({
+          'user_id': user.id,
+          'fcm_token': fcmToken,
+          'device_info': deviceInfo,
+          'created_at': DateTime.now().toIso8601String(),
+          'updated_at': DateTime.now().toIso8601String(),
+        });
+        debugPrint('FCM token saved to user_tokens table in Supabase');
+      } else {
+        // Update existing token
+        await supabase
+            .from('user_tokens')
+            .update({
+              'device_info': deviceInfo, 
+              'updated_at': DateTime.now().toIso8601String()
+            })
+            .eq('user_id', user.id)
+            .eq('fcm_token', fcmToken);
+        debugPrint('FCM token updated in user_tokens table in Supabase');
+      }
 
     } catch (e) {
-      debugPrint('Error saving FCM token to users table: $e');
+      debugPrint('Error saving FCM token to user_tokens table: $e');
     }
   }
 
@@ -56,21 +82,29 @@ class FCMTokenService {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) {
-        debugPrint('User not authenticated, skipping token deletion from users table');
+        debugPrint('User not authenticated, skipping token deletion from user_tokens table');
         return;
       }
       
-      // Clear the FCM token in the 'users' table
-      await supabase
-          .from('users')
-          .update({
-            'notificationtoken': null, // Set to null to clear
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', user.id);
-      debugPrint('FCM token cleared from users table in Supabase');
+      final fcmToken = await _messaging?.getToken();
+      if (fcmToken != null) {
+        // Delete the specific token for this user and device
+        await supabase
+            .from('user_tokens')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('fcm_token', fcmToken);
+        debugPrint('FCM token deleted from user_tokens table in Supabase');
+      } else {
+        // If we can't get the current token, delete all tokens for this user
+        await supabase
+            .from('user_tokens')
+            .delete()
+            .eq('user_id', user.id);
+        debugPrint('All FCM tokens deleted for user from user_tokens table in Supabase');
+      }
     } catch (e) {
-      debugPrint('Error clearing FCM token from users table: $e');
+      debugPrint('Error clearing FCM token from user_tokens table: $e');
     }
   }
 } 
