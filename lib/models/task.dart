@@ -106,8 +106,8 @@ class Task {
       priority: _parseTaskPriority(json['priority']),
       tags: List<String>.from(json['tags'] ?? []),
       pointsAwarded: json['points_awarded'],
-      lastCommentContent: json['last_comment_content'],
-      lastCommentDate: json['last_comment_date'] != null ? DateTime.parse(json['last_comment_date']) : null,
+      lastCommentContent: null,
+      lastCommentDate: null,
       isGroupTask: json['is_group_task'] ?? false,
       originalAssignedTo: json['original_assigned_to'] != null 
           ? List<String>.from(json['original_assigned_to']) 
@@ -130,8 +130,6 @@ class Task {
       'priority': priority.toString().split('.').last,
       'tags': tags,
       'points_awarded': pointsAwarded,
-      'last_comment_content': lastCommentContent,
-      'last_comment_date': lastCommentDate?.toIso8601String(),
       'is_group_task': isGroupTask,
       'original_assigned_to': originalAssignedTo,
     };

@@ -525,17 +525,47 @@ class RealtimeCommentsNotifier extends StateNotifier<List<Comment>> {
         (List<Map<String, dynamic>> data) {
           if (_disposed) return;
           
-          final comments = data.map((json) => Comment.fromJson(json)).toList();
-          
-          // Sort comments by creation date (oldest first)
-          comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
-          
-          state = comments;
-          
-          print('Updated comments via stream for task $_taskId. Total comments: ${comments.length}');
+          try {
+            final comments = data.map((json) => Comment.fromJson(json)).toList();
+            
+            // Sort comments by creation date (oldest first)
+            comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            
+            state = comments;
+            
+            print('Updated comments via stream for task $_taskId. Total comments: ${comments.length}');
+          } catch (e) {
+            print('Error processing comments data for task $_taskId: $e');
+            // Try to reload comments if there's a processing error
+            _loadInitialComments();
+          }
         },
         onError: (error) {
           print('Error in comments stream for task $_taskId: $error');
+          
+          // If there's a stream error, try to reconnect after a delay
+          if (!_disposed) {
+            Timer(const Duration(seconds: 3), () {
+              if (!_disposed) {
+                print('Attempting to reconnect comments stream for task $_taskId');
+                _commentsSubscription?.cancel();
+                _setupStreamSubscription();
+              }
+            });
+          }
+        },
+        onDone: () {
+          print('Comments stream closed for task $_taskId');
+          
+          // If stream closes unexpectedly, try to reconnect
+          if (!_disposed) {
+            Timer(const Duration(seconds: 2), () {
+              if (!_disposed) {
+                print('Reconnecting comments stream for task $_taskId');
+                _setupStreamSubscription();
+              }
+            });
+          }
         },
       );
       
@@ -543,6 +573,16 @@ class RealtimeCommentsNotifier extends StateNotifier<List<Comment>> {
     } catch (e) {
       print('Error setting up comments stream for task $_taskId: $e');
       _commentsSubscription = null;
+      
+      // Try to reconnect after a delay if setup fails
+      if (!_disposed) {
+        Timer(const Duration(seconds: 5), () {
+          if (!_disposed) {
+            print('Retrying comments stream setup for task $_taskId');
+            _setupStreamSubscription();
+          }
+        });
+      }
     }
   }
   
