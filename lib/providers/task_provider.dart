@@ -83,10 +83,16 @@ final selectedTaskProvider = FutureProvider<Task?>((ref) async {
   }
 });
 
-// Task comments provider
+// Task comments provider (non-realtime)
 final taskCommentsProvider = FutureProvider.family<List<Comment>, String>((ref, taskId) async {
   final supabaseService = ref.watch(supabaseServiceProvider);
   return await supabaseService.getComments(taskId: taskId);
+});
+
+// Real-time comments provider using streams
+final realtimeCommentsProvider = StateNotifierProvider.family<RealtimeCommentsNotifier, List<Comment>, String>((ref, taskId) {
+  final supabaseService = ref.watch(supabaseServiceProvider);
+  return RealtimeCommentsNotifier(supabaseService, taskId);
 });
 
 // Task attachments provider
@@ -471,4 +477,85 @@ void initializeRealTimeSubscriptions(WidgetRef ref) {
       ref.read(realtimeTasksProvider.notifier).refreshTasks();
     }
   });
+}
+
+// Stream-based real-time comments notifier
+class RealtimeCommentsNotifier extends StateNotifier<List<Comment>> {
+  final SupabaseService _supabaseService;
+  final String _taskId;
+  StreamSubscription<List<Map<String, dynamic>>>? _commentsSubscription;
+  bool _disposed = false;
+  
+  RealtimeCommentsNotifier(this._supabaseService, this._taskId) : super([]) {
+    // Initial load of comments
+    _loadInitialComments();
+    
+    // Set up real-time subscription using streams
+    _setupStreamSubscription();
+  }
+  
+  Future<void> _loadInitialComments() async {
+    if (_disposed) return;
+    try {
+      final comments = await _supabaseService.getComments(taskId: _taskId);
+      if (_disposed) return;
+      
+      // Sort comments by creation date (oldest first)
+      comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      
+      state = comments;
+      print('Loaded ${comments.length} initial comments for task $_taskId');
+    } catch (e) {
+      print('Error loading initial comments for task $_taskId: $e');
+    }
+  }
+  
+  void _setupStreamSubscription() {
+    if (_disposed) return;
+    
+    try {
+      // Create a stream that listens to comments table changes
+      final stream = _supabaseService.client
+          .from('comments')
+          .stream(primaryKey: ['id'])
+          .eq('task_id', _taskId)
+          .order('created_at');
+      
+      _commentsSubscription = stream.listen(
+        (List<Map<String, dynamic>> data) {
+          if (_disposed) return;
+          
+          final comments = data.map((json) => Comment.fromJson(json)).toList();
+          
+          // Sort comments by creation date (oldest first)
+          comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          
+          state = comments;
+          
+          print('Updated comments via stream for task $_taskId. Total comments: ${comments.length}');
+        },
+        onError: (error) {
+          print('Error in comments stream for task $_taskId: $error');
+        },
+      );
+      
+      print('Subscribed to real-time comments stream for task $_taskId');
+    } catch (e) {
+      print('Error setting up comments stream for task $_taskId: $e');
+      _commentsSubscription = null;
+    }
+  }
+  
+  // Public method to manually refresh comments
+  Future<void> refreshComments() async {
+    await _loadInitialComments();
+  }
+  
+  @override
+  void dispose() {
+    _disposed = true;
+    _commentsSubscription?.cancel();
+    _commentsSubscription = null;
+    super.dispose();
+  }
 } 

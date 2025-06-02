@@ -53,7 +53,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> with Single
   @override
   Widget build(BuildContext context) {
     final taskAsync = ref.watch(selectedTaskProvider);
-    final commentsAsync = ref.watch(taskCommentsProvider(widget.taskId));
+    final commentsAsync = ref.watch(realtimeCommentsProvider(widget.taskId));
     final attachmentsAsync = ref.watch(taskAttachmentsProvider(widget.taskId));
     final userRoleAsync = ref.watch(userRoleProvider);
     
@@ -409,53 +409,41 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> with Single
 
   Widget _buildCommentsTab(
     BuildContext context,
-    AsyncValue<List<Comment>> commentsAsync,
+    List<Comment> comments,
     AsyncValue<UserRole?> userRoleAsync,
   ) {
     return Column(
       children: [
         // Comments list
         Expanded(
-          child: commentsAsync.when(
-            data: (comments) {
-              if (comments.isEmpty) {
-                return const Center(
+          child: comments.isEmpty
+              ? const Center(
                   child: Text('No comments yet'),
-                );
-              }
-              
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: comments.length,
-                itemBuilder: (context, index) {
-                  final comment = comments[index];
-                  
-                  // Check if comment should be visible to employees
-                  final bool isVisible = userRoleAsync.maybeWhen(
-                    data: (role) {
-                      if (role == UserRole.employee) {
-                        return comment.visibleToEmployee;
-                      }
-                      return true;
-                    },
-                    orElse: () => true,
-                  );
-                  
-                  if (!isVisible) {
-                    return const SizedBox.shrink();
-                  }
-                  
-                  return _buildCommentItem(context, comment);
-                },
-              );
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            error: (error, stack) => Center(
-              child: Text('Error: $error'),
-            ),
-          ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = comments[index];
+                    
+                    // Check if comment should be visible to employees
+                    final bool isVisible = userRoleAsync.maybeWhen(
+                      data: (role) {
+                        if (role == UserRole.employee) {
+                          return comment.visibleToEmployee;
+                        }
+                        return true;
+                      },
+                      orElse: () => true,
+                    );
+                    
+                    if (!isVisible) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    return _buildCommentItem(context, comment);
+                  },
+                ),
         ),
         
         // Add comment form
@@ -490,18 +478,25 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> with Single
                         const Text('Visible to employee'),
                         const Spacer(),
                         ElevatedButton.icon(
-                          onPressed: () {
+                          onPressed: () async {
                             // Add comment
                             if (_commentController.text.trim().isNotEmpty) {
-                              ref.read(supabaseServiceProvider).addComment(
-                                taskId: widget.taskId,
-                                content: _commentController.text.trim(),
-                                visibleToEmployee: _visibleToEmployee,
-                              );
-                              _commentController.clear();
-                              
-                              // Refresh comments
-                              ref.refresh(taskCommentsProvider(widget.taskId));
+                              try {
+                                await ref.read(supabaseServiceProvider).addComment(
+                                  taskId: widget.taskId,
+                                  content: _commentController.text.trim(),
+                                  visibleToEmployee: _visibleToEmployee,
+                                );
+                                _commentController.clear();
+                                // Real-time subscription will handle the update automatically
+                              } catch (error) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Error posting comment: $error'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             }
                           },
                           icon: const Icon(Icons.send),
@@ -513,18 +508,25 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> with Single
                   return Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton.icon(
-                      onPressed: () {
+                      onPressed: () async {
                         // Add comment
                         if (_commentController.text.trim().isNotEmpty) {
-                          ref.read(supabaseServiceProvider).addComment(
-                            taskId: widget.taskId,
-                            content: _commentController.text.trim(),
-                            visibleToEmployee: true, // Employees can only post visible comments
-                          );
-                          _commentController.clear();
-                          
-                          // Refresh comments
-                          ref.refresh(taskCommentsProvider(widget.taskId));
+                          try {
+                            await ref.read(supabaseServiceProvider).addComment(
+                              taskId: widget.taskId,
+                              content: _commentController.text.trim(),
+                              visibleToEmployee: true, // Employees can only post visible comments
+                            );
+                            _commentController.clear();
+                            // Real-time subscription will handle the update automatically
+                          } catch (error) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error posting comment: $error'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       },
                       icon: const Icon(Icons.send),
@@ -863,8 +865,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> with Single
                   taskId: task.id,
                 );
                 
-                // Refresh the task
-                ref.read(taskUpdateNotifierProvider.notifier).state = DateTime.now();
+                // Real-time subscription will handle the update automatically
                 
                 if (mounted) Navigator.pop(context);
               },

@@ -7,6 +7,11 @@ final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) 
   return PushNotificationService();
 });
 
+// FCM Edge Function service provider
+final fcmEdgeFunctionServiceProvider = Provider<FCMEdgeFunctionService>((ref) {
+  return FCMEdgeFunctionService();
+});
+
 // Notification service provider
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService(

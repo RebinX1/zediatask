@@ -999,11 +999,8 @@ This error occurs when:
         'visible_to_employee': visibleToEmployee,
       }).select().single();
       
-      // Update task's last comment information
-      await _client.from('tasks').update({
-        'last_comment_content': content,
-        'last_comment_date': DateTime.now().toIso8601String(),
-      }).eq('id', taskId);
+      // Note: We don't update tasks table since those columns don't exist
+      // The Task model will get the latest comment info when fetched
       
       return Comment.fromJson(data);
     } catch (e) {
@@ -1021,7 +1018,7 @@ This error occurs when:
         throw Exception('User not authenticated');
       }
       
-      final commentData = await _client.from('comments').insert({
+      await _client.from('comments').insert({
         'task_id': taskId,
         'author_id': userId,
         'content': 'This is a test comment added at ${DateTime.now()}',
@@ -1029,11 +1026,8 @@ This error occurs when:
         'visible_to_employee': true,
       }).select().single();
       
-      // Update task's last comment information 
-      await _client.from('tasks').update({
-        'last_comment_content': 'This is a test comment added at ${DateTime.now()}',
-        'last_comment_date': DateTime.now().toIso8601String(),
-      }).eq('id', taskId);
+      // Note: We don't update tasks table since those columns don't exist
+      // The Task model will get the latest comment info when fetched
       
     } catch (e) {
       rethrow;

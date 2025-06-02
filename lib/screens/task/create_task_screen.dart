@@ -110,7 +110,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
           
           // Send push notifications to assigned users
           try {
-            final pushNotificationService = ref.read(pushNotificationServiceProvider);
+            final fcmEdgeFunctionService = ref.read(fcmEdgeFunctionServiceProvider);
             List<String> targetUserIds = [];
             
             if (_isGroupTask && _selectedEmployeeIds.isNotEmpty) {
@@ -124,7 +124,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
             if (targetUserIds.isNotEmpty) {
               debugPrint('Sending notifications to ${targetUserIds.length} users for task: ${createdTask.title}');
               
-              final results = await pushNotificationService.sendTaskAssignmentNotifications(
+              final results = await fcmEdgeFunctionService.sendTaskAssignmentNotifications(
                 userIds: targetUserIds,
                 taskTitle: createdTask.title,
                 taskId: createdTask.id,
