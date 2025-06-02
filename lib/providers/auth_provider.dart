@@ -133,3 +133,4 @@ final userDetailsProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
     'avg_completion_time': user.avgCompletionTime ?? 0.0,
   };
 }); 
+
