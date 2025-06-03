@@ -2,11 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zediatask/models/models.dart';
 import 'package:zediatask/services/services.dart';
 
-// Push notification service provider
-final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
-  return PushNotificationService();
-});
-
 // FCM Edge Function service provider
 final fcmEdgeFunctionServiceProvider = Provider<FCMEdgeFunctionService>((ref) {
   return FCMEdgeFunctionService();

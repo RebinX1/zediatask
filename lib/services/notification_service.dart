@@ -1,10 +1,11 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
   // Use nullable for safer access
   FirebaseMessaging? _messaging;
-  bool _isDebugMode = !const bool.fromEnvironment('dart.vm.product');
+  FlutterLocalNotificationsPlugin? _localNotifications;
   
   // For handling notification when the app is in the background
   final Function(RemoteMessage)? onBackgroundMessage;
@@ -22,34 +23,43 @@ class NotificationService {
   }) {
     // Initialize in constructor with safe access
     try {
-      if (!_isDebugMode) {
-        _messaging = FirebaseMessaging.instance;
-      }
+      _messaging = FirebaseMessaging.instance;
+      _localNotifications = FlutterLocalNotificationsPlugin();
     } catch (e) {
       debugPrint('Error initializing Firebase Messaging: $e');
     }
   }
 
   Future<void> initialize() async {
-    // Skip in debug mode
-    if (_isDebugMode || _messaging == null) {
-      debugPrint('Skipping notification service initialization: Firebase not available or in debug mode');
+    if (_messaging == null) {
+      debugPrint('Skipping notification service initialization: Firebase not available');
       return;
     }
     
     try {
+      // Initialize local notifications
+      await _initializeLocalNotifications();
+      
       // Request permission with updated approach for all platforms
       await _requestPermission();
       
       // Listen for foreground messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        if (onForegroundMessage != null) {
-          onForegroundMessage!(message);
-        }
         debugPrint('📱 Foreground message received:');
         debugPrint('📱 Title: ${message.notification?.title}');
         debugPrint('📱 Body: ${message.notification?.body}');
         debugPrint('📱 Data: ${message.data}');
+        
+        // Show local notification when app is in foreground
+        _showLocalNotification(
+          title: message.notification?.title ?? 'New Notification',
+          body: message.notification?.body ?? '',
+          payload: message.data.toString(),
+        );
+        
+        if (onForegroundMessage != null) {
+          onForegroundMessage!(message);
+        }
       });
       
       // Handle notification tap when app is in background
@@ -72,6 +82,97 @@ class NotificationService {
       }
     } catch (e) {
       debugPrint('Error during notification service initialization: $e');
+    }
+  }
+
+  Future<void> _initializeLocalNotifications() async {
+    if (_localNotifications == null) return;
+    
+    try {
+      // Android initialization settings
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@drawable/notification_icon');
+      
+      // iOS initialization settings
+      const DarwinInitializationSettings initializationSettingsIOS =
+          DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      
+      const InitializationSettings initializationSettings =
+          InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsIOS,
+      );
+      
+      await _localNotifications!.initialize(
+        initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          debugPrint('Local notification tapped: ${response.payload}');
+        },
+      );
+      
+      // Create notification channel for Android
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'high_importance_channel',
+        'High Importance Notifications',
+        description: 'This channel is used for important notifications.',
+        importance: Importance.high,
+      );
+      
+      await _localNotifications!
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+          
+      debugPrint('Local notifications initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing local notifications: $e');
+    }
+  }
+
+  Future<void> _showLocalNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    if (_localNotifications == null) return;
+    
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'This channel is used for important notifications.',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+      );
+      
+      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+      
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics,
+      );
+      
+      await _localNotifications!.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        platformChannelSpecifics,
+        payload: payload,
+      );
+      
+      debugPrint('✅ Local notification shown: $title');
+    } catch (e) {
+      debugPrint('❌ Error showing local notification: $e');
     }
   }
 
@@ -107,21 +208,23 @@ class NotificationService {
     }
   }
 
-  // Method to manually show a task notification using FCM API
+  // Method to show a task notification using local notifications
   Future<void> showTaskNotification({
     required String title,
     required String body,
     Map<String, dynamic>? payload,
   }) async {
-    // Log the notification - since we can't directly send local notifications 
-    // without flutter_local_notifications, this is mainly for debugging
     debugPrint('📱 NOTIFICATION REQUEST:');
     debugPrint('📱 Title: $title');
     debugPrint('📱 Body: $body');
     debugPrint('📱 Payload: $payload');
     
-    // This method won't actually show a notification without a server
-    // For production, you would implement server-side notifications using Firebase Cloud Messaging
+    // Show the local notification
+    await _showLocalNotification(
+      title: title,
+      body: body,
+      payload: payload?.toString(),
+    );
   }
 
   Future<String?> getToken() async {
